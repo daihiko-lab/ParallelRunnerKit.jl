@@ -6,7 +6,22 @@ English: [README.md](README.md)
 
 **注**: マルチプロセス並列であり、マルチスレッドではない。単一プロセスのスレッド並列が必要なら、スクリプトを `julia -t N` で直接実行する。
 
-**Julia / GitHub:** いまの構成は小パッケージ形 (`Project.toml` + `src/ParallelRunnerKit.jl`)。**`Manifest.toml`** は任意で、`julia --project=<kit_dir>` で **`Pkg.instantiate()`** すればローカルに生成できる。この上流リポジトリでは **コミットしない** (このディレクトリの **[`.gitignore`](.gitignore)** 参照)。単独公開するときはリポジトリ名 **`ParallelRunnerKit.jl`** で同じレイアウトを想定する (CLI の `runner.jl` などはルートのままか `scripts/` へ移すかは好みでよい)。
+**動作環境 (メンテナ側):** 開発・手動テスト・ドキュメント上の前提は **macOS のみ**。ローカルの `runner.jl` / `setup.jl` の例や運用メモ (rsync、スリープ、Thunderbolt など) は macOS を想定している。**Linux / Windows はこのリポジトリでは検証対象外** (リモートを別 OS にする場合は自己責任で調整する)。
+
+**Julia / GitHub:** いまの構成は小パッケージ形 (`Project.toml` + `src/ParallelRunnerKit.jl`)。**`Manifest.toml`** は任意で、`julia --project=<kit_dir>` で **`Pkg.instantiate()`** すればローカルに生成できる。この上流リポジトリでは **コミットしない** (このディレクトリの **[`.gitignore`](.gitignore)** 参照)。単独公開用の正本は **[daihiko-lab/ParallelRunnerKit.jl](https://github.com/daihiko-lab/ParallelRunnerKit.jl)** (`git clone https://github.com/daihiko-lab/ParallelRunnerKit.jl.git`)。CLI の `runner.jl` などはルートのままか `scripts/` へ移すかは好みでよい。
+
+## 上流リポジトリ (clone / サブモジュール)
+
+```bash
+git clone https://github.com/daihiko-lab/ParallelRunnerKit.jl.git
+cd ParallelRunnerKit.jl
+```
+
+別リポジトリのルートから (典型的なサブモジュールのパス):
+
+```bash
+git submodule add https://github.com/daihiko-lab/ParallelRunnerKit.jl.git ParallelRunnerKit
+```
 
 ## 単体コピー (任意の `Manifest.toml`)
 
@@ -74,6 +89,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 
 ## 前提
 
+- **macOS:** ローカル (および想定するリモート) は **macOS** を前提とする。開発で触るのはこの環境のみ。
 - 全リモートホストへの **SSH 鍵認証** (パスワードなしログイン)
 - 全リモートホストからの **GitHub SSH アクセス** (`ssh -T git@github.com` で確認)
 - 全マシンで **同じプロジェクトパス** (例: `~/projects/MySimulation.jl`)

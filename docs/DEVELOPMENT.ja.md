@@ -6,11 +6,13 @@ English: [DEVELOPMENT.md](DEVELOPMENT.md)
 
 利用者向けのドキュメントは [README.ja.md](../README.ja.md) にある。このファイルは内部 / 将来の開発者向けの参照用。
 
+**動作環境:** メンテナの開発・テストは **macOS のみ**。実装の一部 (例: リモート RAM 取得) は Linux 向けの分岐がコード上あるが、このツリーでは **macOS 以外の動作は検証しない**。
+
 **配布の切り分け:**
 - **分散だけ足したい:** ほぼ **`ParallelRunnerKit/` をそのままコピー**し、スクリプト契約に加え **`ParallelRunnerKit/Project.toml`** の `[deps]` をアプリ側環境へマージ (または同等の依存を宣言)、必要なら **`--package NAME`** を使う (シミュレーションコードは別リポジトリのままでも可)。
 - **シミュだけ欲しい:** **`ParallelRunnerKit/` を丸ごと削除**してよい。ホスト側の `Project.toml` はこの Kit を参照する必要はない (README のリンク文だけ不要なら削る)。
 
-**フォルダ名:** Julia のモジュール名・スタブ `Project.toml` の `name` (`ParallelRunnerKit`) と揃えてあり、将来このツリーを単独リポジトリ **`ParallelRunnerKit.jl`** として切り出すときの配置に寄せている。`resolve_pkg_project_dir` は **`name == ParallelRunnerKit`** でスタブ判定するので、アプリ側の `Project.toml` 解決はディレクトリ名に依存しない。
+**フォルダ名:** Julia のモジュール名・スタブ `Project.toml` の `name` (`ParallelRunnerKit`) と揃えてあり、単独リポジトリとして **[daihiko-lab/ParallelRunnerKit.jl](https://github.com/daihiko-lab/ParallelRunnerKit.jl)** で公開する想定のレイアウトになっている。`resolve_pkg_project_dir` は **`name == ParallelRunnerKit`** でスタブ判定するので、アプリ側の `Project.toml` 解決はディレクトリ名に依存しない。
 
 ## ホストアプリケーションとの結合
 

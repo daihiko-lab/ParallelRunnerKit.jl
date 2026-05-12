@@ -11,11 +11,13 @@ separation is practical.
 User-facing usage docs live in [README.md](../README.md). This file is for
 internal / future-developer reference only.
 
+**Platform:** Maintainers develop and test on **macOS only**. Some implementation details (e.g. rsync flags, remote RAM probes) mention Linux paths for completeness, but **non-macOS behaviour is not validated** in this tree.
+
 **Distribution split:**
 - **Add distributed runs only:** copy **`ParallelRunnerKit/` wholesale** (now includes `src/ParallelRunnerKit.jl`), satisfy the script contract (`init_output_dir!`, `main()`), and merge **`ParallelRunnerKit/Project.toml`** `[deps]` into the active environment. Your simulation code can live elsewhere; the runner does not import any host package by name. Use **`--package NAME`** when the module to load on workers is not the root `Project.toml` `name`.
 - **Simulation only:** **delete the entire `ParallelRunnerKit/` directory** if unused; the host application’s `Project.toml` does not need to list this kit (drop README links in forks if you like).
 
-**Folder name:** Matches the Julia module and stub `Project.toml` `name` (`ParallelRunnerKit`), which is the layout you want before splitting this tree into its own **`ParallelRunnerKit.jl`** GitHub repo. `resolve_pkg_project_dir` keys off **`name == ParallelRunnerKit`**, not the directory basename, so co-located scripts still resolve the application `Project.toml` correctly.
+**Folder name:** Matches the Julia module and stub `Project.toml` `name` (`ParallelRunnerKit`), which is the layout you want before splitting this tree into its own GitHub repo. The published upstream is **[daihiko-lab/ParallelRunnerKit.jl](https://github.com/daihiko-lab/ParallelRunnerKit.jl)**. `resolve_pkg_project_dir` keys off **`name == ParallelRunnerKit`**, not the directory basename, so co-located scripts still resolve the application `Project.toml` correctly.
 
 ## Coupling to the host application
 

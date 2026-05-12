@@ -6,7 +6,22 @@ Parallel execution of Julia **driver scripts** (for example `scripts/jobs.jl` wi
 
 **Note**: Uses multi-process parallelism, not multi-threading. For single-process thread parallelism, run your script directly with `julia -t N`.
 
-**Julia / GitHub:** This tree follows the usual small-package layout (`Project.toml` + `src/ParallelRunnerKit.jl`). A **`Manifest.toml`** is optional: generate it locally with **`Pkg.instantiate()`** under `julia --project=<kit_dir>` if you want pinned runner deps; this upstream repo **does not commit** that file (see **[`.gitignore`](.gitignore)** in this directory). When publishing separately, use a repo named **`ParallelRunnerKit.jl`** with the same layout (CLI scripts can stay at the repo root or move under `scripts/`).
+**Platform (maintainers):** This kit is **developed and tested on macOS only**. Local workflows, examples, and several operational notes (rsync, power/sleep, Thunderbolt) assume macOS. **Linux and Windows are not in the supported matrix** here; remote workers are often Macs in our setups, but if you point the runner at other OSes you are on your own.
+
+**Julia / GitHub:** This tree follows the usual small-package layout (`Project.toml` + `src/ParallelRunnerKit.jl`). A **`Manifest.toml`** is optional: generate it locally with **`Pkg.instantiate()`** under `julia --project=<kit_dir>` if you want pinned runner deps; this upstream repo **does not commit** that file (see **[`.gitignore`](.gitignore)** in this directory). The canonical standalone repo is **[daihiko-lab/ParallelRunnerKit.jl](https://github.com/daihiko-lab/ParallelRunnerKit.jl)** (`git clone https://github.com/daihiko-lab/ParallelRunnerKit.jl.git`). CLI scripts can stay at the repo root or move under `scripts/`.
+
+## Upstream repository (clone / submodule)
+
+```bash
+git clone https://github.com/daihiko-lab/ParallelRunnerKit.jl.git
+cd ParallelRunnerKit.jl
+```
+
+From another repository’s root (typical submodule path):
+
+```bash
+git submodule add https://github.com/daihiko-lab/ParallelRunnerKit.jl.git ParallelRunnerKit
+```
 
 ## Standalone copy (optional `Manifest.toml`)
 
@@ -72,6 +87,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 
 ## Prerequisites
 
+- **macOS:** Local machine (and typical remotes) are expected to be **macOS**; this is the only platform we exercise in development.
 - **SSH key authentication** to all remote hosts (password-less login)
 - **GitHub SSH access** from all remote hosts (verify with `ssh -T git@github.com`)
 - **Same project path** on every machine (e.g. `~/projects/MySimulation.jl`)
