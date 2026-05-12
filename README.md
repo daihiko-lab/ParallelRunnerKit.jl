@@ -68,6 +68,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 | `.gitignore` | Ignores locally generated `Manifest.toml` when this directory is used as its own `--project` |
 | `templates/script_template.jl` | Runnable minimal driver (`init_output_dir!`, `main()`); try `ParallelRunnerKit/runner.jl --local 2 ParallelRunnerKit/templates/script_template.jl` |
 | `docs/` | Developer notes: [DEVELOPMENT.md](docs/DEVELOPMENT.md), [DEVELOPMENT.ja.md](docs/DEVELOPMENT.ja.md); [index](docs/README.md) |
+| `LICENSE` | MIT; this directory can be its own Git repository (submodule, fork, or standalone clone) |
 
 ## Prerequisites
 
@@ -290,3 +291,7 @@ are kept separately in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 | Memory warning at startup | Reduce `--local N` or `host:N`; stale workers are cleaned up automatically |
 | Stale workers after crash | Run `--cleanup host1 host2` or restart runner (auto-cleans) |
 | `attempt to send to unknown socket` | Race right after `addprocs`. Increase wait via `DISTRIBUTED_INIT_DELAY_SEC=10` |
+
+## License
+
+MIT — see [`LICENSE`](LICENSE). This tree is a normal Git project: you can publish it as its own repository, tag releases, and add it to other apps as a submodule or subtree without Julia-specific licensing beyond this file.
