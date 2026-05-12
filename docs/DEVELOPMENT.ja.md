@@ -8,11 +8,11 @@ English: [DEVELOPMENT.md](DEVELOPMENT.md)
 
 **配布の切り分け:**
 - **分散だけ足したい:** ほぼ **`ParallelRunnerKit/` をそのままコピー**し、スクリプト契約に加え **`ParallelRunnerKit/Project.toml`** の `[deps]` をアプリ側環境へマージ (または同等の依存を宣言)、必要なら **`--package NAME`** を使う (シミュレーションコードは別リポジトリのままでも可)。
-- **シミュだけ欲しい:** **`ParallelRunnerKit/` を丸ごと削除**してよい。`src/`・`demo.jl`・`experiments/` とルート `Project.toml` は `ParallelRunnerKit/` に結合していない (README のリンク文だけ不要なら削る)。
+- **シミュだけ欲しい:** **`ParallelRunnerKit/` を丸ごと削除**してよい。ホスト側の `Project.toml` はこの Kit を参照する必要はない (README のリンク文だけ不要なら削る)。
 
 **フォルダ名:** Julia のモジュール名・スタブ `Project.toml` の `name` (`ParallelRunnerKit`) と揃えてあり、将来このツリーを単独リポジトリ **`ParallelRunnerKit.jl`** として切り出すときの配置に寄せている。`resolve_pkg_project_dir` は **`name == ParallelRunnerKit`** でスタブ判定するので、アプリ側の `Project.toml` 解決はディレクトリ名に依存しない。
 
-## ホストパッケージ (\`TCNashAgentsEvo\`) との結合
+## ホストアプリケーションとの結合
 
 `ParallelRunnerKit/` はすでにほぼプロジェクト固有のコードから切り離されている。残っている結合は:
 
@@ -20,10 +20,10 @@ English: [DEVELOPMENT.md](DEVELOPMENT.md)
 |----------|-----------------|
 | `runner.jl` | 既定は `Project.toml` の `name` に対応するモジュールをワーカーでロード (`--package` で上書き可); ワーカー起動と `Main.main()` のオーケストレーション |
 | `runner.jl` | include したスクリプトの `init_output_dir!(ARGS)` と `main()` を呼ぶ |
-| `src/ParallelRunnerKit.jl` | 共有ヘルパ (パス・ログ・SSH/git・ランナー CLI・メモリ/git 整合チェック); `TCNashAgentsEvo` 非依存 |
+| `src/ParallelRunnerKit.jl` | 共有ヘルパ (パス・ログ・SSH/git・ランナー CLI・メモリ/git 整合チェック); ホストパッケージを直接 import しない |
 | `setup.jl`  | プロジェクトルートが `Project.toml` を持つ Julia プロジェクトであること |
 
-どのファイルも `TCNashAgentsEvo` を直接 import していない。runner は `Project.toml` を読んでパッケージ名を発見するので、**変更なしで他の Julia プロジェクトでも動く**。
+どのファイルも **ホストアプリのモジュール名を直接 import していない**。runner は `Project.toml` を読んでパッケージ名を発見するので、**変更なしで他の Julia プロジェクトでも動く**。
 
 ## インターフェース契約 (スクリプト側)
 

@@ -12,12 +12,12 @@ User-facing usage docs live in [README.md](../README.md). This file is for
 internal / future-developer reference only.
 
 **Distribution split:**
-- **Add distributed runs only:** copy **`ParallelRunnerKit/` wholesale** (now includes `src/ParallelRunnerKit.jl`), satisfy the script contract (`init_output_dir!`, `main()`), and merge **`ParallelRunnerKit/Project.toml`** `[deps]` into the active environment. Your simulation code can live elsewhere; the runner does not import `TCNashAgentsEvo` by name. Use **`--package NAME`** when the module to load on workers is not the root `Project.toml` `name`.
-- **Simulation only:** **delete the entire `ParallelRunnerKit/` directory** if unused; `src/`, `demo.jl`, `experiments/`, and the root `Project.toml` do not depend on it (drop README links in forks if you like).
+- **Add distributed runs only:** copy **`ParallelRunnerKit/` wholesale** (now includes `src/ParallelRunnerKit.jl`), satisfy the script contract (`init_output_dir!`, `main()`), and merge **`ParallelRunnerKit/Project.toml`** `[deps]` into the active environment. Your simulation code can live elsewhere; the runner does not import any host package by name. Use **`--package NAME`** when the module to load on workers is not the root `Project.toml` `name`.
+- **Simulation only:** **delete the entire `ParallelRunnerKit/` directory** if unused; the host application’s `Project.toml` does not need to list this kit (drop README links in forks if you like).
 
 **Folder name:** Matches the Julia module and stub `Project.toml` `name` (`ParallelRunnerKit`), which is the layout you want before splitting this tree into its own **`ParallelRunnerKit.jl`** GitHub repo. `resolve_pkg_project_dir` keys off **`name == ParallelRunnerKit`**, not the directory basename, so co-located scripts still resolve the application `Project.toml` correctly.
 
-## Coupling to the host package (`TCNashAgentsEvo` in this tree)
+## Coupling to the host application
 
 `ParallelRunnerKit/` is already almost free of project-specific code. The only
 coupling is:
@@ -26,10 +26,10 @@ coupling is:
 |----------|-----------------|
 | `runner.jl` | Loads the project's main package on workers via `Project.toml` name detection, or `--package`; orchestrates workers and `Main.main()` |
 | `runner.jl` | Calls `init_output_dir!(ARGS)` and `main()` on the included script |
-| `src/ParallelRunnerKit.jl` | Shared helpers (paths, logging, SSH/git, runner CLI `parse_runner_args` / `runner_help_text`, memory + git parity checks); no `TCNashAgentsEvo` |
+| `src/ParallelRunnerKit.jl` | Shared helpers (paths, logging, SSH/git, runner CLI `parse_runner_args` / `runner_help_text`, memory + git parity checks); no host package imports |
 | `setup.jl`  | Project root is a Julia project with a `Project.toml` |
 
-None of the files import `TCNashAgentsEvo` directly. The runner discovers the
+None of the files import the host application by name. The runner discovers the
 package name by reading `Project.toml`, so it works for any Julia project
 without modification.
 

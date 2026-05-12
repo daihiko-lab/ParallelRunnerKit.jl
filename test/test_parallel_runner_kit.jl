@@ -100,19 +100,28 @@
     end
 end
 
-@testset "root Project.toml merges ParallelRunnerKit [deps]" begin
+@testset "host Project.toml merges kit [deps] (monorepo layout)" begin
     using TOML
-    repo_root = abspath(joinpath(@__DIR__, "..", ".."))
-    root_deps = get(TOML.parsefile(joinpath(repo_root, "Project.toml")), "deps", Dict{String,String}())
-    kit_deps =
-        get(TOML.parsefile(joinpath(repo_root, "ParallelRunnerKit", "Project.toml")), "deps", Dict{String,String}())
-    # `Distributed` is stdlib-only: listing it under [deps] in the app breaks `Pkg.resolve` on 1.12+ when
-    # resolved as a Registry package (see julialang compat with stdlibs). The runner still loads it everywhere.
+    kit_root = abspath(joinpath(@__DIR__, ".."))
+    kit_toml = joinpath(kit_root, "Project.toml")
+    @test isfile(kit_toml)
+    kit_deps = get(TOML.parsefile(kit_toml), "deps", Dict{String,String}())
+    parent = dirname(kit_root)
+    parent_proj = joinpath(parent, "Project.toml")
+    nested_kit = joinpath(parent, "ParallelRunnerKit", "Project.toml")
+    # Monorepo: `.../App/ParallelRunnerKit/test` → kit at `App/ParallelRunnerKit`, host `App/Project.toml`.
+    # Standalone kit repo: parent has no nested `ParallelRunnerKit/Project.toml`; only assert kit deps exist.
     skip_merge_check = ["Distributed"]
-    for (name, uuid) in kit_deps
-        n = String(name)
-        n in skip_merge_check && continue
-        @test haskey(root_deps, n)
-        @test root_deps[n] == String(uuid)
+    if isfile(parent_proj) && isfile(nested_kit) && abspath(kit_root) == abspath(joinpath(parent, "ParallelRunnerKit"))
+        root_deps = get(TOML.parsefile(parent_proj), "deps", Dict{String,String}())
+        for (name, uuid) in kit_deps
+            n = String(name)
+            n in skip_merge_check && continue
+            @test haskey(root_deps, n)
+            @test root_deps[n] == String(uuid)
+        end
+    else
+        @test haskey(kit_deps, "ArgParse")
+        @test haskey(kit_deps, "JSON3")
     end
 end

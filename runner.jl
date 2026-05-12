@@ -66,9 +66,9 @@ Example (full workflow):
   # 1. Sync code to remotes
   julia --project=. ParallelRunnerKit/setup.jl --sync host1 host2
 
-  # 2. Run parameter sweep with 29 distributed worker processes (9 local + 10 + 10 remote)
+  # 2. Run a driver script with 29 worker processes (9 local + 10 + 10 remote)
   julia --project=. ParallelRunnerKit/runner.jl --local 9 host1:10 host2:10 \\
-      experiments/sweep_run.jl --config experiments/configs/main.json
+      scripts/jobs.jl --config configs/cell.json
 
 See also: ParallelRunnerKit/setup.jl, ParallelRunnerKit/README.md
 """

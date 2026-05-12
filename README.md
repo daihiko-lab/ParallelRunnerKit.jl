@@ -1,6 +1,6 @@
 # Parallel Computing Scripts
 
-Parallel execution of Julia scripts (for example `experiments/sweep_run.jl`) across local and remote worker processes using Distributed.jl (multi-process parallelism, not multi-threading).
+Parallel execution of Julia **driver scripts** (for example `scripts/jobs.jl` with your own CLI) across local and remote worker processes using Distributed.jl (multi-process parallelism, not multi-threading).
 
 日本語: [README.ja.md](README.ja.md)
 
@@ -24,11 +24,11 @@ julia --project=/path/to/ParallelRunnerKit /path/to/ParallelRunnerKit/runner.jl 
 
 **Embedded in a full app:** Your simulation code still uses the **application root** environment (`julia --project=<repo_root>`) so workers load your main package. You can keep merging only **`[deps]`** from **`Project.toml`** into the host project, same as before.
 
-## What `ParallelRunnerKit/` is for (drop-in kit)
+**Integration:** Git **submodule**, **subtree**, **`Pkg.add` from a URL**, or a plain **directory copy** are all valid; choose what fits your release process. Submodule records a pinned kit commit in the parent repo, but **consumers of your app are not forced** to use submodules if they obtain the kit another way (e.g. vendored copy).
 
-**SSH / multi-host distributed runs:** this directory is meant to be the **whole add-on** you need on top of a normal Julia project: `runner.jl`, `setup.jl`, `suggest_workers.jl`, **[`Project.toml`](Project.toml)** (runner deps; merge into the host project if needed), **`src/ParallelRunnerKit.jl`** (shared module loaded by those scripts), and **[`templates/script_template.jl`](templates/script_template.jl)** (minimal `init_output_dir!` / `main()` you can copy). Copy **`ParallelRunnerKit/` as-is** into another repo, keep the same layout, add the usual script hooks (**`init_output_dir!(args)`** and **`main()`** — see [DEVELOPMENT.md](docs/DEVELOPMENT.md#interface-contract-script-side)), and ensure the active environment declares the same small deps (**`ArgParse`**, **`JSON3`**, **`Dates`**, **`Distributed`**). The runner loads the module named in the root **`Project.toml`** by default, or **`--package NAME`** if the module name differs; it does **not** hard-code `TCNashAgentsEvo`.
+**SSH / multi-host distributed runs:** this directory is meant to be the **whole add-on** you need on top of a normal Julia project: `runner.jl`, `setup.jl`, `suggest_workers.jl`, **[`Project.toml`](Project.toml)** (runner deps; merge into the host project if needed), **`src/ParallelRunnerKit.jl`** (shared module loaded by those scripts), and **[`templates/script_template.jl`](templates/script_template.jl)** (minimal `init_output_dir!` / `main()` you can copy). Copy **`ParallelRunnerKit/` as-is** into another repo, keep the same layout, add the usual script hooks (**`init_output_dir!(args)`** and **`main()`** — see [DEVELOPMENT.md](docs/DEVELOPMENT.md#interface-contract-script-side)), and ensure the active environment declares the same small deps (**`ArgParse`**, **`JSON3`**, **`Dates`**, **`Distributed`**). The runner loads the module named in the root **`Project.toml`** by default, or **`--package NAME`** if the module name differs; it does **not** hard-code any particular application package.
 
-**Simulation-only checkout:** the core model lives in [`src/`](../src/), [`demo.jl`](../demo.jl), and [`experiments/`](../experiments/). If you never use this runner, you can **delete the entire `ParallelRunnerKit/` tree**; `Project.toml` does not reference it, and local `demo.jl` / sequential sweep / your own `julia -p N` / `julia -t N` workflows keep working.
+**Simulation without this runner:** your model and batch code live in **your** application (`src/`, `scripts/`, etc.). If you do not need distributed runs, you can **omit or delete** this kit; the runner does not need to be present for single-process or ad hoc `julia -p N` / `julia -t N` workflows.
 
 ## Procedure
 
@@ -39,19 +39,18 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 [1] add workers (local + remote)
         │
         ▼
-[2] run script (e.g. experiments/sweep_run.jl --config experiments/configs/main.json)
+[2] run script (e.g. `scripts/jobs.jl --config configs/cell.json`)
         │
-        │    for sweep_run.jl: Main.main() pmap over sweep cells; each cell runs
-        │    run_simulation + save_results (see experiments/README, Distributed execution)
+        │    typical pattern: `Main.main()` partitions work, uses `pmap` (or similar)
+        │    across workers, writes artifacts under a run-specific output directory
         │
         ▼
 [3] collect result files from remotes
 ```
 
 **Correspondence**:
-- [root README Overview](../README.md#overview): `run_batch` → `run_simulation` → step loop [1]–[4]
-- [experiments/README — Distributed execution](../experiments/README.md#distributed-execution): `sweep_run.jl` `main()` → `pmap` over `(demands, ratio)` cells → `run_simulation` + `save_results` → per-cell CSV/JSON under `data/sweep/<config-basename>/`
-- **Runner kit** (`ParallelRunnerKit/`): adds workers, runs the script on the master with `ARGS` forwarded, collects new result files from remotes (see `runner.jl` workflow)
+- **Your driver** implements `init_output_dir!` / `main()` (see [DEVELOPMENT.md — Interface contract](docs/DEVELOPMENT.md#interface-contract-script-side)); `main()` usually schedules units of work and aggregates results.
+- **Runner kit** (`ParallelRunnerKit/`): adds workers, runs the script on the master with `ARGS` forwarded, collects new result files from remotes (see `runner.jl` workflow).
 
 **Reproducibility:** `runner.jl` logs **`parallel_runner_kit_version()`** (from `ParallelRunnerKit/Project.toml`) and a **short git hash** for the application project directory. Remote runs still enforce **full commit parity** across hosts unless **`--skip-hash-check`**. Stricter pinning (tags, `Manifest.toml`, worker self-report) is outlined in [DEVELOPMENT.md — Versioning and reproducibility](docs/DEVELOPMENT.md#versioning-and-reproducibility).
 
@@ -63,7 +62,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 | `setup.jl` | Clone, check/sync git repo, install packages, cleanup on remote hosts |
 | `suggest_workers.jl` | Load package on each host, measure RSS, suggest worker allocation |
 | `src/ParallelRunnerKit.jl` | Module: paths, logging, SSH/git, runner CLI (`parse_runner_args`, `runner_help_text`), memory + git parity checks (from your own script: `include(...); using .ParallelRunnerKit`, or `using ParallelRunnerKit` if installed) |
-| `test/runtests.jl` | Kit test entry (run: `julia --project=. ParallelRunnerKit/test/runtests.jl` from repo root) |
+| `test/runtests.jl` | Kit test entry: from app root `julia --project=. ParallelRunnerKit/test/runtests.jl`; from a standalone kit checkout `julia --project=. test/runtests.jl` |
 | `test/test_parallel_runner_kit.jl` | Helper/path tests for `ParallelRunnerKit` (included by `test/runtests.jl`) |
 | `Project.toml` | Declares runner-only deps for vendoring (not the env you use for `src/` sims) |
 | `.gitignore` | Ignores locally generated `Manifest.toml` when this directory is used as its own `--project` |
@@ -74,7 +73,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 
 - **SSH key authentication** to all remote hosts (password-less login)
 - **GitHub SSH access** from all remote hosts (verify with `ssh -T git@github.com`)
-- **Same project path** on every machine (e.g., `~/GitHub/TCNashAgentsEvo.jl-dev`)
+- **Same project path** on every machine (e.g. `~/projects/MySimulation.jl`)
 - **Julia installed** on remote hosts (auto-detected in common locations)
 
 ## Quick Start
@@ -114,17 +113,17 @@ Add local and remote worker processes, then run a script with distributed `pmap`
 ```bash
 julia --project=. ParallelRunnerKit/runner.jl [options] [hosts...] script.jl [script_args...]
 
-# Local + remote (example: parameter sweep)
+# Local + remote (example: driver with CLI)
 julia --project=. ParallelRunnerKit/runner.jl --local 9 host1:10 host2:10 \
-  experiments/sweep_run.jl --config experiments/configs/main.json
+  scripts/jobs.jl --config configs/cell.json
 
 # Remote only (master on local, workers on remotes)
 julia --project=. ParallelRunnerKit/runner.jl host1:10 host2:10 \
-  experiments/sweep_run.jl --config experiments/configs/main.json
+  scripts/jobs.jl --config configs/cell.json
 
 # Local only
 julia --project=. ParallelRunnerKit/runner.jl --local 9 \
-  experiments/sweep_run.jl --config experiments/configs/main.json
+  scripts/jobs.jl --config configs/cell.json
 
 # Files under data/sweep that exist on workers but not locally (recursive)
 julia --project=. ParallelRunnerKit/runner.jl --collect-missing \
@@ -159,8 +158,6 @@ julia --project=. ParallelRunnerKit/runner.jl --collect-overwrite data/sweep m4-
 | `DISTRIBUTED_INIT_DELAY_SEC` | Connection-stabilisation wait after `addprocs` (sec, default: 5) |
 | `DISTRIBUTED_PING_RETRIES` | Per-worker ping retries during init (default: 6) |
 
-![Parallel runner usage](../images/parallel_runner_usage.jpeg)
-
 ## setup.jl
 
 Check, sync, and manage remote hosts before/after running distributed jobs.
@@ -193,7 +190,7 @@ for h in host1 host2 host3; do
 done
 ```
 
-Replace `PROJ` with your project root on the remote (e.g. `~/GitHub/TCNashAgentsEvo.jl-dev`) and `path/to/results/` with the output directory your script uses.
+Replace `PROJ` with your project root on the remote (e.g. `~/projects/MySimulation.jl`) and `path/to/results/` with the output directory your script uses.
 
 ## Long-Running Jobs
 

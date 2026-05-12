@@ -1,6 +1,6 @@
 # 並列計算スクリプト
 
-Distributed.jl によるマルチプロセス並列で、Julia スクリプト (例: `experiments/sweep_run.jl`) をローカルおよびリモートのワーカーに分散実行する (マルチスレッドではない)。
+Distributed.jl によるマルチプロセス並列で、**任意のドライバ** Julia スクリプト (例: `scripts/jobs.jl` と独自の CLI) をローカルおよびリモートのワーカーに分散実行する (マルチスレッドではない)。
 
 English: [README.md](README.md)
 
@@ -26,9 +26,11 @@ julia --project=/path/to/ParallelRunnerKit /path/to/ParallelRunnerKit/runner.jl 
 
 ## `ParallelRunnerKit/` の位置づけ (一式ドロップイン)
 
-**SSH / マルチホストの分散実行**に必要なのは、ざっくり言って **この `ParallelRunnerKit/` ディレクトリの中身一式** (`runner.jl`、`setup.jl`、`suggest_workers.jl`、**[`Project.toml`](Project.toml)** (ランナー専用依存。必要ならホストへ `[deps]` をマージ)、**`src/ParallelRunnerKit.jl`** (前述スクリプトが読み込む共有モジュール)、**[`templates/script_template.jl`](templates/script_template.jl)** (`init_output_dir!` / `main()` の最小例)。別リポジトリへ持ち込むときも **フォルダごとコピー**し、レイアウトを保てばよい。ドライバスクリプト側に **`init_output_dir!(args)`** と **`main()`** を実装する (契約は [DEVELOPMENT.ja.md](docs/DEVELOPMENT.ja.md) の「インターフェース契約 (スクリプト側)」節)。既定ではルート **`Project.toml`** の `name` に対応するモジュールをワーカーで `using` し、名前が違うときは **`--package NAME`**。
+**SSH / マルチホストの分散実行**に必要なのは、ざっくり言って **この `ParallelRunnerKit/` ディレクトリの中身一式** (`runner.jl`、`setup.jl`、`suggest_workers.jl`、**[`Project.toml`](Project.toml)** (ランナー専用依存。必要ならホストへ `[deps]` をマージ)、**`src/ParallelRunnerKit.jl`** (前述スクリプトが読み込む共有モジュール)、**[`templates/script_template.jl`](templates/script_template.jl)** (`init_output_dir!` / `main()` の最小例)。別リポジトリへ持ち込むときも **フォルダごとコピー**し、レイアウトを保てばよい。ドライバスクリプト側に **`init_output_dir!(args)`** と **`main()`** を実装する (契約は [DEVELOPMENT.ja.md](docs/DEVELOPMENT.ja.md) の「インターフェース契約 (スクリプト側)」節)。既定ではルート **`Project.toml`** の `name` に対応するモジュールをワーカーで `using` し、名前が違うときは **`--package NAME`**。特定のアプリ名に **ハードコードはしない**。
 
-**シミュレーションだけ欲しい場合:** 本体は [`src/`](../src/)、[`demo.jl`](../demo.jl)、[`experiments/`](../experiments/) にあり、**`ParallelRunnerKit/` は不要ならフォルダごと削除してよい。** `Project.toml` は `ParallelRunnerKit/` を参照しない。単機の `demo.jl`、逐次スイープ、自分で起動する `julia -p N` / `julia -t N` はそのまま使える。
+**このランナーを使わない場合:** モデルやバッチ処理は **利用側アプリ** の `src/` や `scripts/` などに置く。分散が不要なら **この Kit を置かない / 削除してよい**。単一プロセスや、自分で起動する `julia -p N` / `julia -t N` だけなら Kit は不要。
+
+**取り込み方:** Git の **サブモジュール**、**サブツリー**、**URL からの `Pkg.add`**、単なる **ディレクトリコピー**のいずれでもよい。サブモジュールは親リポで Kit のコミットを固定しやすいが、**利用者全員がサブモジュールを使う必要はない** (ベンダー配布のコピーなど別経路でもよい)。
 
 ## 手順
 
@@ -39,18 +41,17 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 [1] ワーカーを追加 (ローカル + リモート)
         │
         ▼
-[2] スクリプトを実行 (例: experiments/sweep_run.jl --config experiments/configs/main.json)
+[2] スクリプトを実行 (例: `scripts/jobs.jl --config configs/cell.json`)
         │
-        │    sweep_run.jl の場合: Main.main() がスイープセルを pmap し、各セルで
-        │    run_simulation + save_results (experiments/README の分散実行を参照)
+        │    典型: `Main.main()` が仕事を分割し、`pmap` 等でワーカーに回し、
+        │    ランごとの出力ディレクトリに成果物を書く
         │
         ▼
 [3] リモートから結果ファイルを回収
 ```
 
 **対応関係**:
-- [ルート README Overview](../README.md#overview): `run_batch` → `run_simulation` → ステップループ [1]–[4]
-- [experiments/README.ja.md — 分散実行](../experiments/README.ja.md#分散実行): `sweep_run.jl` の `main()` → `(demands, ratio)` セルを `pmap` → `run_simulation` + `save_results` → `data/sweep/<設定ファイル名>/` 以下にセルごとの CSV/JSON
+- **ドライバ側:** `init_output_dir!` / `main()` を実装する (契約は [DEVELOPMENT.ja.md](docs/DEVELOPMENT.ja.md) の「インターフェース契約 (スクリプト側)」)。`main()` で単位ジョブを並列化し集約するのが一般的。
 - **ランナーキット** (`ParallelRunnerKit/`): ワーカーを足し、マスターでスクリプトを `ARGS` 付きで実行し、リモートの新しい結果ファイルを回収する (`runner.jl` のワークフロー)
 
 **再現性:** `runner.jl` は **`parallel_runner_kit_version()`** (`ParallelRunnerKit/Project.toml` の `version`) と、アプリ側プロジェクトディレクトリの **git 短縮ハッシュ** をログに出す。リモート利用時は従来どおりホスト間で **完全同一コミット** を要求する (**`--skip-hash-check`** で無効化可)。タグ・`Manifest.toml`・ワーカ自己申告など、より厳しくする候補は [DEVELOPMENT.ja.md](docs/DEVELOPMENT.ja.md) の「バージョン管理と再現性」を参照。
@@ -63,7 +64,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 | `setup.jl` | リモートホストでクローン、git の確認/同期、パッケージインストール、クリーンアップ |
 | `suggest_workers.jl` | 各ホストでパッケージをロードし RSS を計測、ワーカー割り当てを提案 |
 | `src/ParallelRunnerKit.jl` | モジュール: パス・ログ・SSH/git・ランナー CLI・メモリ/git 整合チェック (自前スクリプトからは `include(...); using .ParallelRunnerKit`、インストール済みなら `using ParallelRunnerKit`) |
-| `test/runtests.jl` | キット用テストの入口 (リポジトリルートで `julia --project=. ParallelRunnerKit/test/runtests.jl`) |
+| `test/runtests.jl` | キット用テストの入口: アプリルートなら `julia --project=. ParallelRunnerKit/test/runtests.jl`、単体 Kit なら `julia --project=. test/runtests.jl` |
 | `test/test_parallel_runner_kit.jl` | `ParallelRunnerKit` のパス等のテスト (`test/runtests.jl` から include) |
 | `Project.toml` | ランナー用依存の明示 (`src/` 用の環境ではなく、持ち込み用の一覧) |
 | `.gitignore` | このディレクトリ単体を `--project` にしたときにできる `Manifest.toml` を無視 |
@@ -74,7 +75,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 
 - 全リモートホストへの **SSH 鍵認証** (パスワードなしログイン)
 - 全リモートホストからの **GitHub SSH アクセス** (`ssh -T git@github.com` で確認)
-- 全マシンで **同じプロジェクトパス** (例: `~/GitHub/TCNashAgentsEvo.jl-dev`)
+- 全マシンで **同じプロジェクトパス** (例: `~/projects/MySimulation.jl`)
 - リモートホストに **Julia がインストール済み** (一般的な場所を自動検出)
 
 ## クイックスタート
@@ -114,17 +115,17 @@ HTTPS の origin URL は自動で SSH 形式に変換される。
 ```bash
 julia --project=. ParallelRunnerKit/runner.jl [options] [hosts...] script.jl [script_args...]
 
-# ローカル + リモート (例: パラメータスイープ)
+# ローカル + リモート (例: CLI 付きドライバ)
 julia --project=. ParallelRunnerKit/runner.jl --local 9 host1:10 host2:10 \
-  experiments/sweep_run.jl --config experiments/configs/main.json
+  scripts/jobs.jl --config configs/cell.json
 
 # リモートのみ (マスターはローカル、ワーカーはリモート)
 julia --project=. ParallelRunnerKit/runner.jl host1:10 host2:10 \
-  experiments/sweep_run.jl --config experiments/configs/main.json
+  scripts/jobs.jl --config configs/cell.json
 
 # ローカルのみ
 julia --project=. ParallelRunnerKit/runner.jl --local 9 \
-  experiments/sweep_run.jl --config experiments/configs/main.json
+  scripts/jobs.jl --config configs/cell.json
 
 # data/sweep 以下でホストにあってローカルに無いファイルだけ再帰的に取得
 julia --project=. ParallelRunnerKit/runner.jl --collect-missing \
@@ -159,8 +160,6 @@ julia --project=. ParallelRunnerKit/runner.jl --collect-overwrite data/sweep m4-
 | `DISTRIBUTED_INIT_DELAY_SEC` | `addprocs` 後の接続安定化待ち (秒、デフォルト: 5) |
 | `DISTRIBUTED_PING_RETRIES` | ワーカー疎通確認のリトライ回数 (デフォルト: 6) |
 
-![Parallel runner usage](../images/parallel_runner_usage.jpeg)
-
 ## setup.jl
 
 分散ジョブの実行前後にリモートホストを確認、同期、管理する。
@@ -193,7 +192,7 @@ for h in host1 host2 host3; do
 done
 ```
 
-`PROJ` をリモートのプロジェクトルート (例: `~/GitHub/TCNashAgentsEvo.jl-dev`) に、`path/to/results/` をスクリプトが使う出力ディレクトリに置き換える。
+`PROJ` をリモートのプロジェクトルート (例: `~/projects/MySimulation.jl`) に、`path/to/results/` をスクリプトが使う出力ディレクトリに置き換える。
 
 ## 長時間実行のジョブ
 
