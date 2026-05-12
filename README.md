@@ -1,5 +1,7 @@
 # Parallel Computing Scripts
 
+**Status:** Under active development in our lab. We are still **confirming behaviour through real simulation experiments**; treat interfaces, scripts, and operational notes as **subject to change** until a stable release line is declared.
+
 Parallel execution of Julia **driver scripts** (for example `scripts/jobs.jl` with your own CLI) across local and remote worker processes using Distributed.jl (multi-process parallelism, not multi-threading).
 
 日本語: [README.ja.md](README.ja.md)
