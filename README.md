@@ -1,4 +1,4 @@
-# Parallel Computing Scripts
+# ParallelRunnerKit.jl
 
 **Status:** Under active development in our lab. We are still **confirming behaviour through real simulation experiments**; treat interfaces, scripts, and operational notes as **subject to change** until a stable release line is declared.
 
