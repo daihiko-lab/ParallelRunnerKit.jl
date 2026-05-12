@@ -15,7 +15,7 @@
         @test resolve_pkg_project_dir(joinpath(root, "kitstub")) == root
     end
 
-    @test parallel_runner_kit_version() >= v"0.1.0"
+    @test parallel_runner_kit_version() >= v"0.2.0"
 
     @test_throws ArgumentError ParallelRunnerKit.parse_runner_args(["--collect", "h"])
     @test_throws ArgumentError ParallelRunnerKit.parse_runner_args(["--collect-sync", "data/sweep", "host"])

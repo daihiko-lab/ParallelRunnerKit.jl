@@ -6,11 +6,27 @@ Parallel execution of Julia scripts (for example `experiments/sweep_run.jl`) acr
 
 **Note**: Uses multi-process parallelism, not multi-threading. For single-process thread parallelism, run your script directly with `julia -t N`.
 
-**Julia / GitHub:** This tree already follows the usual package shape (`Project.toml` + `src/ParallelRunnerKit.jl`). When publishing separately, use a repo named **`ParallelRunnerKit.jl`** with the same layout (CLI scripts can stay at the repo root or move under `scripts/`).
+**Julia / GitHub:** This tree follows the usual small-package layout (`Project.toml` + `src/ParallelRunnerKit.jl`). A **`Manifest.toml`** is optional: generate it locally with **`Pkg.instantiate()`** under `julia --project=<kit_dir>` if you want pinned runner deps; this upstream repo **does not commit** that file (see **[`.gitignore`](.gitignore)** in this directory). When publishing separately, use a repo named **`ParallelRunnerKit.jl`** with the same layout (CLI scripts can stay at the repo root or move under `scripts/`).
+
+## Standalone copy (optional `Manifest.toml`)
+
+If you copy **`ParallelRunnerKit/`** alone and want a resolved environment for the runner stack (`ArgParse`, `JSON3`, stdlibs), run once:
+
+```bash
+julia --project=/path/to/ParallelRunnerKit -e 'using Pkg; Pkg.instantiate()'
+```
+
+That writes **`Manifest.toml`** next to **`Project.toml`** on disk. **`ParallelRunnerKit/.gitignore`** keeps it untracked so you are not forced to follow Julia-resolution churn in this upstream tree; downstream forks or private deployments can still **commit** their own manifest if they prefer strict pinning.
+
+```bash
+julia --project=/path/to/ParallelRunnerKit /path/to/ParallelRunnerKit/runner.jl --help
+```
+
+**Embedded in a full app:** Your simulation code still uses the **application root** environment (`julia --project=<repo_root>`) so workers load your main package. You can keep merging only **`[deps]`** from **`Project.toml`** into the host project, same as before.
 
 ## What `ParallelRunnerKit/` is for (drop-in kit)
 
-**SSH / multi-host distributed runs:** this directory is meant to be the **whole add-on** you need on top of a normal Julia project: `runner.jl`, `setup.jl`, `suggest_workers.jl`, **[`Project.toml`](Project.toml)** (lists only the runner’s deps — merge its `[deps]` into your app’s environment if needed), **`src/ParallelRunnerKit.jl`** (shared module loaded by those scripts), and **[`templates/script_template.jl`](templates/script_template.jl)** (minimal `init_output_dir!` / `main()` you can copy). Copy **`ParallelRunnerKit/` as-is** into another repo, keep the same layout, add the usual script hooks (**`init_output_dir!(args)`** and **`main()`** — see [DEVELOPMENT.md](docs/DEVELOPMENT.md#interface-contract-script-side)), and ensure the active environment declares the same small deps (**`ArgParse`**, **`JSON3`**, **`Dates`**, **`Distributed`**). The runner loads the module named in the root **`Project.toml`** by default, or **`--package NAME`** if the module name differs; it does **not** hard-code `TCNashAgentsEvo`.
+**SSH / multi-host distributed runs:** this directory is meant to be the **whole add-on** you need on top of a normal Julia project: `runner.jl`, `setup.jl`, `suggest_workers.jl`, **[`Project.toml`](Project.toml)** (runner deps; merge into the host project if needed), **`src/ParallelRunnerKit.jl`** (shared module loaded by those scripts), and **[`templates/script_template.jl`](templates/script_template.jl)** (minimal `init_output_dir!` / `main()` you can copy). Copy **`ParallelRunnerKit/` as-is** into another repo, keep the same layout, add the usual script hooks (**`init_output_dir!(args)`** and **`main()`** — see [DEVELOPMENT.md](docs/DEVELOPMENT.md#interface-contract-script-side)), and ensure the active environment declares the same small deps (**`ArgParse`**, **`JSON3`**, **`Dates`**, **`Distributed`**). The runner loads the module named in the root **`Project.toml`** by default, or **`--package NAME`** if the module name differs; it does **not** hard-code `TCNashAgentsEvo`.
 
 **Simulation-only checkout:** the core model lives in [`src/`](../src/), [`demo.jl`](../demo.jl), and [`experiments/`](../experiments/). If you never use this runner, you can **delete the entire `ParallelRunnerKit/` tree**; `Project.toml` does not reference it, and local `demo.jl` / sequential sweep / your own `julia -p N` / `julia -t N` workflows keep working.
 
@@ -50,6 +66,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 | `test/runtests.jl` | Kit test entry (run: `julia --project=. ParallelRunnerKit/test/runtests.jl` from repo root) |
 | `test/test_parallel_runner_kit.jl` | Helper/path tests for `ParallelRunnerKit` (included by `test/runtests.jl`) |
 | `Project.toml` | Declares runner-only deps for vendoring (not the env you use for `src/` sims) |
+| `.gitignore` | Ignores locally generated `Manifest.toml` when this directory is used as its own `--project` |
 | `templates/script_template.jl` | Runnable minimal driver (`init_output_dir!`, `main()`); try `ParallelRunnerKit/runner.jl --local 2 ParallelRunnerKit/templates/script_template.jl` |
 | `docs/` | Developer notes: [DEVELOPMENT.md](docs/DEVELOPMENT.md), [DEVELOPMENT.ja.md](docs/DEVELOPMENT.ja.md); [index](docs/README.md) |
 

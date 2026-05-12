@@ -6,11 +6,27 @@ English: [README.md](README.md)
 
 **注**: マルチプロセス並列であり、マルチスレッドではない。単一プロセスのスレッド並列が必要なら、スクリプトを `julia -t N` で直接実行する。
 
-**Julia / GitHub:** いまの構成は一般的な小パッケージ形 (`Project.toml` + `src/ParallelRunnerKit.jl`) になっている。単独公開するときはリポジトリ名 **`ParallelRunnerKit.jl`** で同じレイアウトを想定する (CLI の `runner.jl` などはルートのままか `scripts/` へ移すかは好みでよい)。
+**Julia / GitHub:** いまの構成は小パッケージ形 (`Project.toml` + `src/ParallelRunnerKit.jl`)。**`Manifest.toml`** は任意で、`julia --project=<kit_dir>` で **`Pkg.instantiate()`** すればローカルに生成できる。この上流リポジトリでは **コミットしない** (このディレクトリの **[`.gitignore`](.gitignore)** 参照)。単独公開するときはリポジトリ名 **`ParallelRunnerKit.jl`** で同じレイアウトを想定する (CLI の `runner.jl` などはルートのままか `scripts/` へ移すかは好みでよい)。
+
+## 単体コピー (任意の `Manifest.toml`)
+
+**`ParallelRunnerKit/`** だけをコピーしてランナー用依存 (`ArgParse`、`JSON3`、stdlib) を解決したいときは、一度:
+
+```bash
+julia --project=/path/to/ParallelRunnerKit -e 'using Pkg; Pkg.instantiate()'
+```
+
+とすると **`Project.toml`** の隣に **`Manifest.toml`** ができる。**`ParallelRunnerKit/.gitignore`** で追跡対象外にしてあるので、この上流ツリーではレジストリ解決の差分を常にコミットしなくてよい。厳密に固定したいフォークや私用配布では、**自分で `Manifest.toml` をコミット**してもよい。
+
+```bash
+julia --project=/path/to/ParallelRunnerKit /path/to/ParallelRunnerKit/runner.jl --help
+```
+
+**フルアプリに埋め込む場合:** シミュレーション本体はこれまでどおり **アプリケーションルート** の環境 (`julia --project=<リポジトリルート>`) を使い、ホストの `Project.toml` に **`[deps]` だけマージ**する従来の使い方でよい。
 
 ## `ParallelRunnerKit/` の位置づけ (一式ドロップイン)
 
-**SSH / マルチホストの分散実行**に必要なのは、ざっくり言って **この `ParallelRunnerKit/` ディレクトリの中身一式** (`runner.jl`、`setup.jl`、`suggest_workers.jl`、**[`Project.toml`](Project.toml)** (ランナー専用依存の一覧。必要ならアプリ側の `Project.toml` に `[deps]` をマージ)、**`src/ParallelRunnerKit.jl`** (前述スクリプトが読み込む共有モジュール)、**[`templates/script_template.jl`](templates/script_template.jl)** (`init_output_dir!` / `main()` の最小例)。別リポジトリへ持ち込むときも **フォルダごとコピー**し、レイアウトを保てばよい。ドライバスクリプト側に **`init_output_dir!(args)`** と **`main()`** を実装する (契約は [DEVELOPMENT.ja.md](docs/DEVELOPMENT.ja.md) の「インターフェース契約 (スクリプト側)」節)。既定ではルート **`Project.toml`** の `name` に対応するモジュールをワーカーで `using` し、名前が違うときは **`--package NAME`**。
+**SSH / マルチホストの分散実行**に必要なのは、ざっくり言って **この `ParallelRunnerKit/` ディレクトリの中身一式** (`runner.jl`、`setup.jl`、`suggest_workers.jl`、**[`Project.toml`](Project.toml)** (ランナー専用依存。必要ならホストへ `[deps]` をマージ)、**`src/ParallelRunnerKit.jl`** (前述スクリプトが読み込む共有モジュール)、**[`templates/script_template.jl`](templates/script_template.jl)** (`init_output_dir!` / `main()` の最小例)。別リポジトリへ持ち込むときも **フォルダごとコピー**し、レイアウトを保てばよい。ドライバスクリプト側に **`init_output_dir!(args)`** と **`main()`** を実装する (契約は [DEVELOPMENT.ja.md](docs/DEVELOPMENT.ja.md) の「インターフェース契約 (スクリプト側)」節)。既定ではルート **`Project.toml`** の `name` に対応するモジュールをワーカーで `using` し、名前が違うときは **`--package NAME`**。
 
 **シミュレーションだけ欲しい場合:** 本体は [`src/`](../src/)、[`demo.jl`](../demo.jl)、[`experiments/`](../experiments/) にあり、**`ParallelRunnerKit/` は不要ならフォルダごと削除してよい。** `Project.toml` は `ParallelRunnerKit/` を参照しない。単機の `demo.jl`、逐次スイープ、自分で起動する `julia -p N` / `julia -t N` はそのまま使える。
 
@@ -50,6 +66,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 | `test/runtests.jl` | キット用テストの入口 (リポジトリルートで `julia --project=. ParallelRunnerKit/test/runtests.jl`) |
 | `test/test_parallel_runner_kit.jl` | `ParallelRunnerKit` のパス等のテスト (`test/runtests.jl` から include) |
 | `Project.toml` | ランナー用依存の明示 (`src/` 用の環境ではなく、持ち込み用の一覧) |
+| `.gitignore` | このディレクトリ単体を `--project` にしたときにできる `Manifest.toml` を無視 |
 | `templates/script_template.jl` | 動く最小ドライバ。試し: `ParallelRunnerKit/runner.jl --local 2 ParallelRunnerKit/templates/script_template.jl` |
 | `docs/` | 開発者向け: [DEVELOPMENT.md](docs/DEVELOPMENT.md)、[DEVELOPMENT.ja.md](docs/DEVELOPMENT.ja.md)、[目次 README](docs/README.md) |
 
