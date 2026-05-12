@@ -1,0 +1,20 @@
+# Dependency manifest for the Julia scripts in this directory (runner.jl,
+# setup.jl, suggest_workers.jl). The simulation project normally uses
+# `julia --project=<repo_root>`; this file is for vendoring: merge the [deps]
+# entries into your application Project.toml, or keep a root env that already
+# lists them.
+
+name = "ParallelRunnerKit"
+uuid = "73975722-9f85-4360-83b9-7c97efcd71a4"
+version = "0.1.0"
+
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Distributed = "8ba89e20-285c-5b94-8fc8-19163b51a225"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+
+[compat]
+ArgParse = "1"
+JSON3 = "1"
+julia = "1.12"
