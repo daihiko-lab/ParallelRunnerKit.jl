@@ -57,7 +57,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 
 - 全リモートホストへの **SSH 鍵認証** (パスワードなしログイン)
 - 全リモートホストからの **GitHub SSH アクセス** (`ssh -T git@github.com` で確認)
-- 全マシンで **同じプロジェクトパス** (例: `~/GitHub/TCNashEvo.jl-dev`)
+- 全マシンで **同じプロジェクトパス** (例: `~/GitHub/TCNashAgentsEvo.jl-dev`)
 - リモートホストに **Julia がインストール済み** (一般的な場所を自動検出)
 
 ## クイックスタート
@@ -176,7 +176,7 @@ for h in host1 host2 host3; do
 done
 ```
 
-`PROJ` をリモートのプロジェクトルート (例: `~/GitHub/TCNashEvo.jl-dev`) に、`path/to/results/` をスクリプトが使う出力ディレクトリに置き換える。
+`PROJ` をリモートのプロジェクトルート (例: `~/GitHub/TCNashAgentsEvo.jl-dev`) に、`path/to/results/` をスクリプトが使う出力ディレクトリに置き換える。
 
 ## 長時間実行のジョブ
 

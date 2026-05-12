@@ -1,5 +1,5 @@
 #!/usr/bin/env julia
-# ParallelRunnerKit unit tests (not part of `Pkg.test("TCNashEvo")`).
+# ParallelRunnerKit unit tests (not part of `Pkg.test("TCNashAgentsEvo")`).
 # From repository root:
 #   julia --project=. ParallelRunnerKit/test/runtests.jl
 

@@ -10,7 +10,7 @@ Parallel execution of Julia scripts (for example `experiments/sweep_run.jl`) acr
 
 ## What `ParallelRunnerKit/` is for (drop-in kit)
 
-**SSH / multi-host distributed runs:** this directory is meant to be the **whole add-on** you need on top of a normal Julia project: `runner.jl`, `setup.jl`, `suggest_workers.jl`, **[`Project.toml`](Project.toml)** (lists only the runner’s deps — merge its `[deps]` into your app’s environment if needed), **`src/ParallelRunnerKit.jl`** (shared module loaded by those scripts), and **[`templates/script_template.jl`](templates/script_template.jl)** (minimal `init_output_dir!` / `main()` you can copy). Copy **`ParallelRunnerKit/` as-is** into another repo, keep the same layout, add the usual script hooks (**`init_output_dir!(args)`** and **`main()`** — see [DEVELOPMENT.md](docs/DEVELOPMENT.md#interface-contract-script-side)), and ensure the active environment declares the same small deps (**`ArgParse`**, **`JSON3`**, **`Dates`**, **`Distributed`**). The runner loads the module named in the root **`Project.toml`** by default, or **`--package NAME`** if the module name differs; it does **not** hard-code `TCNashEvo`.
+**SSH / multi-host distributed runs:** this directory is meant to be the **whole add-on** you need on top of a normal Julia project: `runner.jl`, `setup.jl`, `suggest_workers.jl`, **[`Project.toml`](Project.toml)** (lists only the runner’s deps — merge its `[deps]` into your app’s environment if needed), **`src/ParallelRunnerKit.jl`** (shared module loaded by those scripts), and **[`templates/script_template.jl`](templates/script_template.jl)** (minimal `init_output_dir!` / `main()` you can copy). Copy **`ParallelRunnerKit/` as-is** into another repo, keep the same layout, add the usual script hooks (**`init_output_dir!(args)`** and **`main()`** — see [DEVELOPMENT.md](docs/DEVELOPMENT.md#interface-contract-script-side)), and ensure the active environment declares the same small deps (**`ArgParse`**, **`JSON3`**, **`Dates`**, **`Distributed`**). The runner loads the module named in the root **`Project.toml`** by default, or **`--package NAME`** if the module name differs; it does **not** hard-code `TCNashAgentsEvo`.
 
 **Simulation-only checkout:** the core model lives in [`src/`](../src/), [`demo.jl`](../demo.jl), and [`experiments/`](../experiments/). If you never use this runner, you can **delete the entire `ParallelRunnerKit/` tree**; `Project.toml` does not reference it, and local `demo.jl` / sequential sweep / your own `julia -p N` / `julia -t N` workflows keep working.
 
@@ -57,7 +57,7 @@ ParallelRunnerKit/runner.jl [--local N] [host1:W host2:W ...] script.jl [args...
 
 - **SSH key authentication** to all remote hosts (password-less login)
 - **GitHub SSH access** from all remote hosts (verify with `ssh -T git@github.com`)
-- **Same project path** on every machine (e.g., `~/GitHub/TCNashEvo.jl-dev`)
+- **Same project path** on every machine (e.g., `~/GitHub/TCNashAgentsEvo.jl-dev`)
 - **Julia installed** on remote hosts (auto-detected in common locations)
 
 ## Quick Start
@@ -176,7 +176,7 @@ for h in host1 host2 host3; do
 done
 ```
 
-Replace `PROJ` with your project root on the remote (e.g. `~/GitHub/TCNashEvo.jl-dev`) and `path/to/results/` with the output directory your script uses.
+Replace `PROJ` with your project root on the remote (e.g. `~/GitHub/TCNashAgentsEvo.jl-dev`) and `path/to/results/` with the output directory your script uses.
 
 ## Long-Running Jobs
 
