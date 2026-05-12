@@ -14,6 +14,36 @@ English: [DEVELOPMENT.md](DEVELOPMENT.md)
 
 **フォルダ名:** Julia のモジュール名・スタブ `Project.toml` の `name` (`ParallelRunnerKit`) と揃えてあり、単独リポジトリとして **[daihiko-lab/ParallelRunnerKit.jl](https://github.com/daihiko-lab/ParallelRunnerKit.jl)** で公開する想定のレイアウトになっている。`resolve_pkg_project_dir` は **`name == ParallelRunnerKit`** でスタブ判定するので、アプリ側の `Project.toml` 解決はディレクトリ名に依存しない。
 
+## 親リポ (`TCNashAgentsEvo.jl-dev`) でのサブモジュール
+
+[TCNashAgentsEvo.jl-dev](https://github.com/daihiko-lab/TCNashAgentsEvo.jl-dev) は、このリポジトリを `ParallelRunnerKit/` として **git サブモジュール**で取り込んでいる。親を clone するとき:
+
+```bash
+git clone --recurse-submodules https://github.com/daihiko-lab/TCNashAgentsEvo.jl-dev.git
+# すでに clone 済みでサブモジュールが空のとき:
+git submodule update --init --recursive
+```
+
+**親が指す Kit のコミットを上げる:** まず **このリポジトリ** の `main` に push したうえで、親の作業ツリーで:
+
+```bash
+cd ParallelRunnerKit && git pull origin main && cd ..
+git add ParallelRunnerKit
+git commit -m "Bump ParallelRunnerKit submodule"
+```
+
+## 埋め込みツリーからの一回限りのミラー (サブモジュールでない場合)
+
+別アプリがリポジトリ内に普通の `ParallelRunnerKit/` ディレクトリとして持っている場合、そのルートから **この** GitHub リポジトリへ中身を送るには `git subtree split` を使う。
+
+```bash
+git subtree split -P ParallelRunnerKit -b parallel-runner-kit-publish
+git push https://github.com/daihiko-lab/ParallelRunnerKit.jl.git parallel-runner-kit-publish:main
+git branch -D parallel-runner-kit-publish
+```
+
+Kit 側の `main` を意図的に書き換えるときだけ `git push ... --force-with-lease` を検討する (常用しない)。
+
 ## ホストアプリケーションとの結合
 
 `ParallelRunnerKit/` はすでにほぼプロジェクト固有のコードから切り離されている。残っている結合は:

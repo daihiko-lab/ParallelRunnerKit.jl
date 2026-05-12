@@ -19,6 +19,36 @@ internal / future-developer reference only.
 
 **Folder name:** Matches the Julia module and stub `Project.toml` `name` (`ParallelRunnerKit`), which is the layout you want before splitting this tree into its own GitHub repo. The published upstream is **[daihiko-lab/ParallelRunnerKit.jl](https://github.com/daihiko-lab/ParallelRunnerKit.jl)**. `resolve_pkg_project_dir` keys off **`name == ParallelRunnerKit`**, not the directory basename, so co-located scripts still resolve the application `Project.toml` correctly.
 
+## Parent checkout (`TCNashAgentsEvo.jl-dev`) as submodule
+
+[TCNashAgentsEvo.jl-dev](https://github.com/daihiko-lab/TCNashAgentsEvo.jl-dev) vendors this repository under `ParallelRunnerKit/` as a **git submodule**. After cloning that parent:
+
+```bash
+git clone --recurse-submodules https://github.com/daihiko-lab/TCNashAgentsEvo.jl-dev.git
+# or, if you already cloned without submodules:
+git submodule update --init --recursive
+```
+
+**Bump the kit revision recorded in the parent:** commit and push on **this** repository’s `main`, then in the parent:
+
+```bash
+cd ParallelRunnerKit && git pull origin main && cd ..
+git add ParallelRunnerKit
+git commit -m "Bump ParallelRunnerKit submodule"
+```
+
+## One-off mirror from an embedded tree (no submodule)
+
+If another application still keeps a plain `ParallelRunnerKit/` directory inside its repo and you want to push that tree to **this** GitHub repo, use `git subtree split` from that application’s root:
+
+```bash
+git subtree split -P ParallelRunnerKit -b parallel-runner-kit-publish
+git push https://github.com/daihiko-lab/ParallelRunnerKit.jl.git parallel-runner-kit-publish:main
+git branch -D parallel-runner-kit-publish
+```
+
+Use `git push ... --force-with-lease` only when you intentionally rewrite `main` on the kit remote (rare).
+
 ## Coupling to the host application
 
 `ParallelRunnerKit/` is already almost free of project-specific code. The only
